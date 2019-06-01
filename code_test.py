@@ -41,6 +41,9 @@ if __name__ == '__main__':
     y_models[:, 2] = y3
 
     mcnemar_table = ModelComparison.mcnemar_table(yt, y1, y2)
+    mcnemar_tables = ModelComparison.multiple_mcnemar_tables(yt, y_models)
+    for table in mcnemar_tables:
+        print(table)
     print(ModelComparison.mcnemar_test(mcnemar_table, correction=False))
 
     print(ModelComparison.mcnemar_test(mcnemar_table, correction=True))

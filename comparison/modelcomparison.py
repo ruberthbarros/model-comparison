@@ -61,6 +61,48 @@ class ModelComparison:
 
         return table
 
+    @classmethod
+    def multiple_mcnemar_tables(cls, y_true, y_models):
+        """ Creates a (2, 2) MacNemar table for each pair of classifiers
+        results to be compared in the following format:
+        |A|B|
+        |C|D|
+        where:
+        A: # of correcly classified items by both models.
+        B: # of correcly classified items by y_clf2 that y_clf1 got wrong.
+        C: # of correctly classified items by y_clf1 that y_clf2 got wrong.
+        D: # of wrongly classified items by both models.
+
+        Reference: https://arxiv.org/pdf/1811.12808.pdf.
+
+        Parameters
+        ----------
+
+        y_true: numpy.array shape (n,).
+            The ground truth results.
+        y_models: numpy.array shape (n, m).
+            Array with all classifiers results.
+
+        Returns
+        -------
+        table: list of m numpy.arrays of shape(2, 2)
+            The list of McNemar tables.
+        """
+
+        tables = list()
+        m = y_models.shape[1]
+
+        # Generates each unique combination of m classifiers.
+        for iindex in np.arange(m):
+            print(f'i -> {iindex}')
+            for jindex in np.arange(iindex + 1, m):
+                print(f'j -> {jindex}')
+                y_clf1 = y_models[:, iindex]
+                y_clf2 = y_models[:, jindex]
+                tables.append(cls.mcnemar_table(y_true, y_clf1, y_clf2))
+
+        return tables
+
     @staticmethod
     def mcnemar_test(table, correction=True):
         """ McNemar test implemented as following:
