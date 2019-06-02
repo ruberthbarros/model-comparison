@@ -1,3 +1,3 @@
-__all__ = ['ModelComparison']
+__all__ = ['McNemarTest', 'CochranQTest']
 
-from .modelcomparison import ModelComparison
+from .modelcomparison import McNemarTest, CochranQTest
