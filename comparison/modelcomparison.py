@@ -75,7 +75,7 @@ def _multiple_mcnemar_tables(y_true, y_models):
         The list of McNemar tables.
     """
 
-    tables = list()
+    tables = dict()
     m = y_models.shape[1]
 
     # Generates each unique combination of m classifiers.
@@ -83,7 +83,9 @@ def _multiple_mcnemar_tables(y_true, y_models):
         for jindex in np.arange(iindex + 1, m):
             y_clf1 = y_models[:, iindex]
             y_clf2 = y_models[:, jindex]
-            tables.append(_mcnemar_table(y_true, y_clf1, y_clf2))
+
+            combination_key = f'M{iindex}-M{jindex}'
+            tables[combination_key] = _mcnemar_table(y_true, y_clf1, y_clf2)
 
     return tables
 
@@ -217,14 +219,12 @@ def _cochran_q_test(y_true, y_models):
 
 
 def _check_difference(p_values, alpha):
-    m = len(p_values)
+    test_diff_result = dict()
+    for key, value in p_values.items():
+        has_diff = value < alpha
+        test_diff_result[key] = has_diff
 
-    has_difference_list = list()
-    for index in np.arange(m):
-        has_diff = p_values[index] < alpha
-        has_difference_list.append(has_diff)
-
-    return has_difference_list
+    return test_diff_result
 
 
 class ModelComparison:
@@ -238,9 +238,9 @@ class ModelComparison:
 
         self._y_true = y_true
         self._y_models = y_models
-        self.coefficient_ = list()
-        self.p_value_ = list()
-        self.different_proportions_ = list()
+        self.coefficient_ = dict()
+        self.p_value_ = dict()
+        self.test_result_ = dict()
 
     def evaluate(self, alpha):
         """Base method for models comparison."""
@@ -254,25 +254,25 @@ class McNemarTest(ModelComparison):
     """
     def __init__(self, y_true, y_models, correction=True):
         ModelComparison.__init__(self, y_true, y_models)
-        self.tables_ = list()
+        self.tables_ = dict()
         self._correction = correction
 
     def evaluate(self, alpha=0.05):
         self.tables_ = _multiple_mcnemar_tables(self._y_true, self._y_models)
 
         # Calculates each pair chi2 and p_value for each mcnemar table
-        for table in self.tables_:
+        for combination, table in self.tables_.items():
             chi2, p_value = _mcnemar_test(table, correction=self._correction)
-            self.coefficient_.append(chi2)
-            self.p_value_.append(p_value)
+            self.coefficient_[combination] = chi2
+            self.p_value_[combination] = p_value
 
-        self.different_proportions_ = _check_difference(self.p_value_, alpha)
+        self.test_result_ = _check_difference(self.p_value_, alpha)
 
         return self
 
 
 class CochranQTest(ModelComparison):
-    """Class for McNemar Test.
+    """Class for Cochran's Q Test.
 
     Reference: https://arxiv.org/pdf/1811.12808.pdf.
     """
@@ -280,33 +280,37 @@ class CochranQTest(ModelComparison):
         ModelComparison.__init__(self, y_true, y_models)
         self._use_mcnemar = use_mcnemar
         if use_mcnemar:
-            self.mcnemar_tables_ = list()
-            self.mcnemar_coefficients_ = list()
-            self.mcnemar_p_values_ = list()
-            self.mcnemar_differences_ = list()
+            self.mcnemar_tables_ = None
+            self.mcnemar_coefficients_ = None
+            self.mcnemar_p_values_ = None
+            self.mcnemar_test_result_ = None
 
     def evaluate(self, alpha=0.05):
         q, p_value = _cochran_q_test(self._y_true, self._y_models)
 
-        self.coefficient_.append(q)
-        self.p_value_.append(p_value)
+        self.coefficient_['all'] = q
+        self.p_value_['all'] = p_value
 
         has_difference = p_value < alpha
-        if has_difference:
-            self.different_proportions_.append(has_difference)
-            if not self._use_mcnemar:
-                return self
+        self.test_result_['all'] = has_difference
 
-        if self._use_mcnemar:
-            self.mcnemar_tables_ = _multiple_mcnemar_tables(self._y_true,
-                                                            self._y_models)
+        if not has_difference:
+            return self
 
-            for table in self.mcnemar_tables_:
-                chi2, p_value = _mcnemar_test(table)
-                self.mcnemar_coefficients_.append(chi2)
-                self.mcnemar_p_values_.append(p_value)
+        if has_difference and not self._use_mcnemar:
+            return self
 
-            self.mcnemar_differences_ = \
-                _check_difference(self.mcnemar_p_values_, alpha)
+        self.mcnemar_tables_ = _multiple_mcnemar_tables(self._y_true,
+                                                        self._y_models)
+
+        self.mcnemar_coefficients_ = dict()
+        self.mcnemar_p_values_ = dict()
+        for combination, table in self.mcnemar_tables_.items():
+            chi2, p_value = _mcnemar_test(table)
+            self.mcnemar_coefficients_[combination] = chi2
+            self.mcnemar_p_values_[combination] = p_value
+
+        self.mcnemar_test_result_ = \
+            _check_difference(self.mcnemar_p_values_, alpha)
 
         return self
