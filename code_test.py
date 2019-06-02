@@ -1,66 +1,61 @@
 from comparison import McNemarTest, CochranQTest
 import numpy as np
+import argparse
+import pathlib
+
+
+def get_arguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--file', '-f', default=None, required=True,
+                        help='Path to file with test samples values and '
+                             'classifier results.')
+
+    return parser.parse_args()
+
+
+def read_input(file_path, delimiter=';'):
+    """ Read a input csv file with the results of M classifiers.
+
+    Parameters
+    ----------
+
+    file_path: str
+    delimiter: str, optional, default: ';'
+
+    Returns
+    -------
+
+    y_true: numpy.array, shape(n, 1)
+        The first column of input csv file that represents the ground truth
+        test samples.
+    clfs_array: numpy.array, shape(n, m)
+        Matrix where each column is the result of a classifier C1...Cm.
+    """
+    content_array = np.genfromtxt(file_path, delimiter=delimiter,
+                                  skip_header=1, dtype=np.uint8)
+
+    y_true = content_array[:, 0]
+    clfs_array = content_array[:, 1:]
+
+    return y_true, clfs_array
+
 
 if __name__ == '__main__':
-    yt = np.array([
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0])
+    args = get_arguments()
+    filepath = pathlib.Path(args.file)
+    y_true, y_models = read_input(filepath)
 
-    y1 = np.array([
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0])
+    mcnemar = McNemarTest(y_true, y_models)
+    mcnemar = mcnemar.evaluate()
 
-    y2 = np.array([
-        1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0])
+    print(mcnemar.test_result_)
 
-    y3 = np.array([
-        1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 1, 1])
+    cochran = CochranQTest(y_true, y_models)
+    cochran = cochran.evaluate()
 
-    # table = ModelComparison.create_mcnemar_table(yt, y1, y2)
-    # table = np.array([9959, 25, 15, 15]).reshape(2, 2)
-    # print(table)
+    print(cochran.test_result_)
 
-    n = yt.shape[0]
-    y_models = np.zeros(n * 3).reshape(n, 3)
-    y_models[:, 0] = y1
-    y_models[:, 1] = y2
-    y_models[:, 2] = y3
+    cochran_mcnemar = CochranQTest(y_true, y_models, use_mcnemar=True)
+    cochran_mcnemar = cochran_mcnemar.evaluate()
 
-    mcnemar_test = McNemarTest(yt, y_models)
-    mcnemar_test.evaluate()
-
-    print(mcnemar_test.tables_)
-    print(mcnemar_test.coefficient_)
-    print(mcnemar_test.p_value_)
-    print(mcnemar_test.different_proportions_)
-
-    cochran_test = CochranQTest(yt, y_models)
-    cochran_test.evaluate()
-
-    print(cochran_test.coefficient_)
-    print(cochran_test.p_value_)
-    print(cochran_test.different_proportions_)
-
-    cochran_test = CochranQTest(yt, y_models, use_mcnemar=True)
-    cochran_test.evaluate()
-
-    print(cochran_test.coefficient_)
-    print(cochran_test.p_value_)
-    print(cochran_test.different_proportions_)
-    print(cochran_test.mcnemar_coefficients_)
-    print(cochran_test.mcnemar_p_values_)
-    print(cochran_test.mcnemar_differences_)
+    print(cochran_mcnemar.mcnemar_test_result_)
