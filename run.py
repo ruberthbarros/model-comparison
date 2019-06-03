@@ -1,4 +1,4 @@
-"""Runs two methods implemented in the comparison package as example"""
+"""Runs two methods implemented in the comparison package as example."""
 
 from comparison import McNemarTest, CochranQTest
 from utils import get_arguments, read_input
@@ -30,4 +30,8 @@ if __name__ == '__main__':
     cochran_mcnemar = CochranQTest(y_true, y_models, use_mcnemar=True)
     cochran_mcnemar = cochran_mcnemar.evaluate()
 
+    # Will print None because the null hypothesis has not been rejected
+    print(cochran_mcnemar.mcnemar_tables_)
+    print(cochran_mcnemar.mcnemar_coefficients_)
+    print(cochran_mcnemar.mcnemar_p_values_)
     print(cochran_mcnemar.mcnemar_test_result_)
