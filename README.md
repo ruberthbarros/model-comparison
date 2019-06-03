@@ -15,3 +15,7 @@ pip install -r requirements.txt
 ```
 python run.py -f 'PATH/TO/INPUT/FILE.csv'
 ```
+* To run the test
+```
+pytest -v
+```
