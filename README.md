@@ -4,4 +4,14 @@ A reference for these techniques can be found in https://arxiv.org/pdf/1811.1280
 
 Techniques implemented so far:
 * McNemar Test (with/without continuity correction)
-* Cochran's Q Test
+* Cochran's Q Test (optional: + McNemar Test)
+
+Usage
+* Install requirements
+```
+pip install -r requirements.txt
+```
+* To run the example
+```
+python run.py -f 'PATH/TO/INPUT/FILE.csv'
+```
