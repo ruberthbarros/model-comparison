@@ -2,3 +2,5 @@
 *.pyc
 .venv
 /input
+*.csv
+.pytest_cache/
